@@ -119,7 +119,7 @@ class FurnitureView : UIButton, UIAlertViewDelegate, UITextFieldDelegate {
     
     
     // --- Initializers
-    required init(coder aDecoder: NSCoder) {
+    required init?(coder aDecoder: NSCoder) {
         type = "desk"
         super.init(coder: aDecoder)
     }
@@ -138,9 +138,9 @@ class FurnitureView : UIButton, UIAlertViewDelegate, UITextFieldDelegate {
         self.titleLabel?.font = UIFont(name: "Proxima Nova", size: 20)
         
         // Add touch events
-        addTarget(self, action:Selector("dragged:withEvent:"), forControlEvents:.TouchDragInside | .TouchDragOutside)
-        addTarget(self, action:Selector("touchDown:withEvent:"), forControlEvents:.TouchDown)
-        addTarget(self, action:Selector("touchUp:withEvent:"), forControlEvents:.TouchUpInside | .TouchUpOutside)
+        addTarget(self, action:#selector(FurnitureView.dragged(_:withEvent:)), forControlEvents:[.TouchDragInside, .TouchDragOutside])
+        addTarget(self, action:#selector(FurnitureView.touchDown(_:withEvent:)), forControlEvents:.TouchDown)
+        addTarget(self, action:#selector(FurnitureView.touchUp(_:withEvent:)), forControlEvents:[.TouchUpInside, .TouchUpOutside])
     }
     
     // --- Set state given model
@@ -170,7 +170,7 @@ class FurnitureView : UIButton, UIAlertViewDelegate, UITextFieldDelegate {
         temporarilyHideMenu() // Hide the menu while dragging
         
         // Get the touch in view, bound it to the room, and move the button there
-        if let touch = event.touchesForView(button)?.anyObject() as? UITouch {
+        if let touch = event.touchesForView(button)?.first {
             let touchLoc = touch.locationInView(self.superview)
             if let startDown = self.startDown {
                 if abs(startDown.x - touchLoc.x) > 10 || abs(startDown.y - touchLoc.y) > 10 {
@@ -211,7 +211,7 @@ class FurnitureView : UIButton, UIAlertViewDelegate, UITextFieldDelegate {
         superview?.bringSubviewToFront(self)
         moveToTopHandler?()
         
-        NSTimer.scheduledTimerWithTimeInterval(0.04, target:self, selector: Selector("debouncedMove:"), userInfo: nil, repeats:true)
+        NSTimer.scheduledTimerWithTimeInterval(0.04, target:self, selector: #selector(FurnitureView.debouncedMove(_:)), userInfo: nil, repeats:true)
     }
     
     func touchUp(button: UIButton, withEvent event: UIEvent) {
@@ -286,8 +286,9 @@ class FurnitureView : UIButton, UIAlertViewDelegate, UITextFieldDelegate {
         }
     }
     
-    func textField(textField: UITextField, shouldChangeCharactersInRange range:NSRange, replacementString string:NSString) -> Bool {
-        let newName = (textField.text as NSString).stringByReplacingCharactersInRange(range, withString: string) as String
+    
+    func textField(textField: UITextField, shouldChangeCharactersInRange range: NSRange, replacementString string: String) -> Bool {
+        let newName = (textField.text! as NSString).stringByReplacingCharactersInRange(range, withString: string as String) as String
         editHandler?(newName)
         return true
     }
@@ -327,11 +328,11 @@ class FurnitureView : UIButton, UIAlertViewDelegate, UITextFieldDelegate {
         
         // Set menu items
         menuController.menuItems = [
-            UIMenuItem(title: "Rotate", action:Selector("triggerRotate:")),
-            UIMenuItem(title: "Delete", action:Selector("triggerDelete:"))
+            UIMenuItem(title: "Rotate", action:#selector(FurnitureView.triggerRotate(_:))),
+            UIMenuItem(title: "Delete", action:#selector(FurnitureView.triggerDelete(_:)))
         ]
         if type == "desk" {
-            menuController.menuItems?.insert(UIMenuItem(title: "Edit", action:Selector("triggerEdit:")), atIndex:0)
+            menuController.menuItems?.insert(UIMenuItem(title: "Edit", action:#selector(FurnitureView.triggerEdit(_:))), atIndex:0)
         }
         
         // Handle displaying and disappearing the menu
@@ -371,6 +372,6 @@ extension FurnitureView {
     }
     
     override func canPerformAction(action: Selector, withSender sender: AnyObject?) -> Bool {
-        return action == Selector("triggerRotate:") || action == Selector("triggerDelete:") || action == Selector("triggerEdit:")
+        return action == #selector(FurnitureView.triggerRotate(_:)) || action == #selector(FurnitureView.triggerDelete(_:)) || action == #selector(FurnitureView.triggerEdit(_:))
     }
 }
